@@ -2,7 +2,6 @@ import numpy as np
 import csv
 import math
 import pandas as pd
-#from argparse import Namespace
 
 def valid(x, y):
   # TODO: Try to filter out extreme values.
@@ -55,10 +54,13 @@ def minibatch(x, y, config):
     beta_1 = np.full(x[0].shape, 0.9).reshape(-1, 1)
     beta_2 = np.full(x[0].shape, 0.99).reshape(-1, 1)
     # Linear regression: only contains two parameters (w, b).
-    w = np.full(x[0].shape, 0.1).reshape(-1, 1)
+    w1= np.full(x[0].shape, 0.1).reshape(-1, 1)
+    w2= np.full(x[0].shape, 0.1).reshape(-1, 1)
     bias = 0.1
-    m_t = np.full(x[0].shape, 0).reshape(-1, 1)
-    v_t = np.full(x[0].shape, 0).reshape(-1, 1)
+    m_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
+    v_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
+    m_t2 = np.full(x[0].shape, 0).reshape(-1, 1)
+    v_t2 = np.full(x[0].shape, 0).reshape(-1, 1)
     m_t_b = 0.0
     v_t_b = 0.0
     t = 0
@@ -72,7 +74,7 @@ def minibatch(x, y, config):
             #print(x_batch.shape)
             #print(y_batch.shape)
             # Prediction of linear regression
-            pred = np.dot(x_batch,w) + bias
+            pred = np.dot(np.square(x_batch), w2) + np.dot(x_batch,w1) + bias
             
             # loss
             loss = y_batch - pred
@@ -81,24 +83,29 @@ def minibatch(x, y, config):
             ## Edit: remove 2 * lam * np.sum(w)  (2022.10.11)
             # https://math.stackexchange.com/questions/1962877/compute-the-gradient-of-mean-square-error
             
-            g_t = np.dot(x_batch.transpose(),loss) * (-2)
+            g_t1 = np.dot(x_batch.transpose(),loss) * (-2)
+            g_t2 = np.dot(np.square(x_batch).transpose(),loss) * (-2)
             g_t_b = loss.sum(axis=0) * (-2)
-            m_t = beta_1*m_t + (1-beta_1)*g_t
-            v_t = beta_2*v_t + (1-beta_2)*np.multiply(g_t, g_t)
-            m_cap = m_t/(1-(beta_1**t))
-            v_cap = v_t/(1-(beta_2**t))
+            m_t1 = beta_1*m_t1 + (1-beta_1)*g_t1
+            m_t2 = beta_1*m_t2 + (1-beta_1)*g_t2
+            v_t1 = beta_2*v_t1 + (1-beta_2)*np.multiply(g_t1, g_t1)
+            v_t2 = beta_2*v_t2 + (1-beta_2)*np.multiply(g_t2, g_t2)
+            m_cap1 = m_t1/(1-(beta_1**t))
+            m_cap2 = m_t2/(1-(beta_1**t))
+            v_cap1 = v_t1/(1-(beta_2**t))
+            v_cap2 = v_t2/(1-(beta_2**t))
             m_t_b = 0.9*m_t_b + (1-0.9)*g_t_b
             v_t_b = 0.99*v_t_b + (1-0.99)*(g_t_b*g_t_b)
             m_cap_b = m_t_b/(1-(0.9**t))
             v_cap_b = v_t_b/(1-(0.99**t))
-            w_0 = np.copy(w)
             
             # Update weight & bias
-            w -= ((lr*m_cap)/(np.sqrt(v_cap)+epsilon)).reshape(-1, 1)
+            w1 -= ((lr*m_cap1)/(np.sqrt(v_cap1)+epsilon)).reshape(-1, 1)
+            w2 -= ((lr*m_cap2)/(np.sqrt(v_cap2)+epsilon)).reshape(-1, 1)
             #print(w)
             bias -= (lr*m_cap_b)/(math.sqrt(v_cap_b)+epsilon)
 
-    return w, bias
+    return w1, bias
 
 def parse2test(data, feats):
     x = []
