@@ -55,7 +55,7 @@ def minibatch(x, y, config):
     beta_2 = np.full(x[0].shape, 0.99).reshape(-1, 1)
     # Linear regression: only contains two parameters (w, b).
     w1= np.full(x[0].shape, 0.1).reshape(-1, 1)
-    w2= np.full(x[0].shape, 0.1).reshape(-1, 1)
+    w2= np.full(x[0].shape, 0.05).reshape(-1, 1)
     bias = 0.1
     m_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
     v_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
@@ -130,10 +130,11 @@ def main():
     # TODO: Tune the config to boost your performance.
     train_config = Namespace(
     batch_size = 8,
-    lr = 1e-3,
-    epoch = 3,
+    lr = 5e-4,
+    epoch = 5,
     )
-    feats = [1, 3, 4, 6, 7, 10, 14]
+    #feats = [1, 2, 3, 4, 5, 6, 10, 14]
+    feats = [2]
     #train_data = np.transpose(np.array(np.float64(data)))
     train_x, train_y = parse2train(train_data, feats)
     #print(train_x.shape)
