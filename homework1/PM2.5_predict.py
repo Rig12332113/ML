@@ -2,6 +2,7 @@ import numpy as np
 import csv
 import math
 import pandas as pd
+from argparse import Namespace
 
 def valid(x, y):
   # TODO: Try to filter out extreme values.
@@ -20,8 +21,6 @@ def parse2train(data, feats):
         x_tmp = data[i:i+8, feats] # Use data #0~#7 to predict #8, data #1~#8 to predict #9, etc.
         y_tmp = data[i+8, -1] # last column of (i+8)th row: PM2.5
 
-    #print(x_tmp)
-
     # Filter out extreme values to train.
         if valid(x_tmp, y_tmp):
             x.append(x_tmp.reshape(-1,))
@@ -39,9 +38,7 @@ def minibatch(x, y, config):
     '''
     # Randomize the data in minibatch
     index = np.arange(x.shape[1])
-    print(index)
     np.random.shuffle(index)
-    print(index)
     x = x[index]
     y = y[index]
     '''
@@ -54,8 +51,8 @@ def minibatch(x, y, config):
     beta_1 = np.full(x[0].shape, 0.9).reshape(-1, 1)
     beta_2 = np.full(x[0].shape, 0.99).reshape(-1, 1)
     # Linear regression: only contains two parameters (w, b).
-    w1= np.full(x[0].shape, 0.1).reshape(-1, 1)
-    w2= np.full(x[0].shape, 0.05).reshape(-1, 1)
+    w1= np.full(x[0].shape, 0.008).reshape(-1, 1)
+    w2= np.full(x[0].shape, 0.001).reshape(-1, 1)
     bias = 0.1
     m_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
     v_t1 = np.full(x[0].shape, 0).reshape(-1, 1)
@@ -74,7 +71,7 @@ def minibatch(x, y, config):
             #print(x_batch.shape)
             #print(y_batch.shape)
             # Prediction of linear regression
-            pred = np.dot(np.square(x_batch), w2) + np.dot(x_batch,w1) + bias
+            pred = np.dot(np.square(x_batch), w2) + np.dot(x_batch, w1) + bias
             
             # loss
             loss = y_batch - pred
@@ -102,10 +99,9 @@ def minibatch(x, y, config):
             # Update weight & bias
             w1 -= ((lr*m_cap1)/(np.sqrt(v_cap1)+epsilon)).reshape(-1, 1)
             w2 -= ((lr*m_cap2)/(np.sqrt(v_cap2)+epsilon)).reshape(-1, 1)
-            #print(w)
             bias -= (lr*m_cap_b)/(math.sqrt(v_cap_b)+epsilon)
 
-    return w1, bias
+    return w2, w1, bias
 
 def parse2test(data, feats):
     x = []
@@ -119,28 +115,32 @@ def parse2test(data, feats):
 
 def main():
     ## Edit: use np.random.seed(seed) (2022.10.12)
-    #seed = 9487
-    #np.random.seed(seed)
+    seed = 9487
+    np.random.seed(seed)
 
     # Training
     data = pd.read_csv("./train.csv")
-    from argparse import Namespace
     data = data.values
     train_data = np.array(np.float64(data))
     # TODO: Tune the config to boost your performance.
     train_config = Namespace(
     batch_size = 8,
-    lr = 5e-4,
+    lr = 1e-4,
     epoch = 5,
     )
-    #feats = [1, 2, 3, 4, 5, 6, 10, 14]
-    feats = [2]
+    feats = [2, 3, 6, 14]
+    #feats = [2]
     #train_data = np.transpose(np.array(np.float64(data)))
     train_x, train_y = parse2train(train_data, feats)
     #print(train_x.shape)
     #print(train_y)
-    w, bias = minibatch(train_x, train_y, train_config)
-    print(w.shape, bias)
+    w2, w1, bias = minibatch(train_x, train_y, train_config)
+    print("w2: ")
+    print(w2)
+    print("w1: ")
+    print(w1)
+    print("bias: ")
+    print(bias)
 
     # Testing
     data = pd.read_csv('./test.csv')
@@ -154,10 +154,10 @@ def main():
     # 建立 CSV 檔寫入器
         writer = csv.writer(csvf)
         writer.writerow(['Id','Predicted'])
-        print(test_x.shape)
+        #print(test_x.shape)
         for i in range(int(test_x.shape[0])):
         # Prediction of linear regression
-            prediction = (np.dot(np.reshape(w,-1),test_x[i]) + bias)[0]
+            prediction = float(np.dot(np.square(test_x[i]), w2) + np.dot(test_x[i], w1) + bias)
             writer.writerow([i, prediction])
 
 if __name__ == '__main__':
